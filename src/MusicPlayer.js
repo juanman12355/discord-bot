@@ -38,6 +38,14 @@ class MusicPlayer {
     this.audioPlayer = createAudioPlayer({
       behaviors: { noSubscriber: NoSubscriberBehavior.Pause },
     });
+    this.audioPlayer.on('error', error => {
+      console.error('Error en reproducción:', error);
+      this.playNext();
+    });
+
+    this.audioPlayer.on(AudioPlayerStatus.Idle, () => {
+      this.playNext();
+    });
 
     this._setupEvents();
   }
@@ -155,6 +163,12 @@ class MusicPlayer {
       adapterCreator: voiceChannel.guild.voiceAdapterCreator,
       selfDeaf: true,
     });
+    try {
+      await entersState(this.connection, VoiceConnectionStatus.Ready, 30_000);
+    } catch (error) {
+      this.connection.destroy();
+      throw new Error("No pude conectarme al canal de voz");
+    }
 
     this.connection.subscribe(this.audioPlayer);
 

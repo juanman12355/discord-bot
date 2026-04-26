@@ -52,7 +52,7 @@ class SpotifyHelper {
    * @param {string} url
    * @returns {{ type: 'track'|'playlist', id: string } | null}
    */
-  parseUrl(url) {
+  static parseUrl(url) {
     const track = url.match(/spotify\.com\/track\/([a-zA-Z0-9]+)/);
     if (track) return { type: 'track', id: track[1] };
 
@@ -83,7 +83,7 @@ class SpotifyHelper {
   // ── Public methods ────────────────────────────────────────────────────────
 
   /** Obtiene un track individual por ID. */
-  async getTrack(id, requester) {
+  static async getTrack(id, requester) {
     const data = await this._get(`/tracks/${id}`);
     return this._formatTrack(data, requester);
   }
@@ -92,7 +92,7 @@ class SpotifyHelper {
    * Obtiene todos los tracks de una playlist (maneja paginación de hasta 100 por página).
    * @returns {Track[]}
    */
-  async getPlaylistTracks(id, requester) {
+  static async getPlaylistTracks(id, requester) {
     const tracks = [];
     let path =
       `/playlists/${id}/tracks?limit=100` +
