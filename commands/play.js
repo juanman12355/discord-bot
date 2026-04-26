@@ -112,9 +112,10 @@ module.exports = {
     if (!player.connection) {
       try {
         await player.join(vc);
-      } catch {
+      } catch (err) {
+        console.error('[play] Error al conectar al canal de voz:', err);
         client.players.delete(interaction.guildId);
-        return interaction.editReply('❌ No pude conectarme al canal de voz. Inténtalo de nuevo.');
+        return interaction.editReply(`❌ No pude conectarme al canal de voz: \`${err.message}\``);
       }
     }
 
