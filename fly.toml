@@ -1,0 +1,13 @@
+app = "bot-musico"
+primary_region = "mia"  # Miami, el más cercano a Colombia
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+
+# Sin HTTP — es un bot de Discord, no necesita puerto
+[[services]]
+
+[deploy]
+  strategy = "immediate"
