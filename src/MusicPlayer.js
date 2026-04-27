@@ -102,6 +102,8 @@ class MusicPlayer {
         '-o', '-',
         '--quiet',
         '--no-playlist',
+        '--cookies', '/home/ubuntu/discord-bot/cookies.txt',
+        '--js-runtimes', 'deno',
         track.streamUrl,
       ]);
 
