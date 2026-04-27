@@ -8,7 +8,9 @@ const {
   VoiceConnectionStatus,
   entersState,
   NoSubscriberBehavior,
+  StreamType,
 } = require('@discordjs/voice');
+const { spawn } = require('child_process');
 const playdl = require('play-dl');
 const SpotifyHelper = require('./SpotifyHelper');
 
@@ -95,9 +97,20 @@ class MusicPlayer {
     }
 
     try {
-      const stream = await playdl.stream(track.streamUrl, { quality: 2 });
-      const resource = createAudioResource(stream.stream, {
-        inputType: stream.type,
+      const ytdlp = spawn('/usr/local/bin/yt-dlp', [
+        '-f', 'bestaudio',
+        '-o', '-',
+        '--quiet',
+        '--no-playlist',
+        track.streamUrl,
+      ]);
+
+      ytdlp.stderr.on('data', data => {
+        console.error(`[yt-dlp:${this.guildId}]`, data.toString().trim());
+      });
+
+      const resource = createAudioResource(ytdlp.stdout, {
+        inputType: StreamType.Arbitrary,
         inlineVolume: true,
       });
       resource.volume.setVolume(this.volume);
@@ -120,13 +133,10 @@ class MusicPlayer {
 
     this.connection.subscribe(this.audioPlayer);
 
-    // Log de cada cambio de estado para diagnosticar problemas
     this.connection.on('stateChange', (oldSt, newSt) => {
       console.log(`[Voice:${this.guildId}] ${oldSt.status} -> ${newSt.status}`);
     });
 
-    // isReady evita que el handler de Disconnected destruya la conexión
-    // mientras todavía está en proceso de conectarse por primera vez
     let isReady = false;
 
     this.connection.on(VoiceConnectionStatus.Disconnected, async () => {

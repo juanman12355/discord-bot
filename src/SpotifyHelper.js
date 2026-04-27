@@ -1,10 +1,5 @@
 'use strict';
 
-/**
- * SpotifyHelper
- * Wrapper para la Spotify Web API usando Client Credentials (sin login de usuario).
- * Reutiliza las credenciales de tu proyecto de playlists.
- */
 class SpotifyHelper {
   constructor() {
     this.clientId = process.env.SPOTIFY_CLIENT_ID;
@@ -12,8 +7,6 @@ class SpotifyHelper {
     this._token = null;
     this._tokenExpiry = 0;
   }
-
-  // ── Auth ──────────────────────────────────────────────────────────────────
 
   async _getToken() {
     if (this._token && Date.now() < this._tokenExpiry) return this._token;
@@ -45,13 +38,6 @@ class SpotifyHelper {
     return res.json();
   }
 
-  // ── URL parsing ───────────────────────────────────────────────────────────
-
-  /**
-   * Detecta si una URL es de Spotify y devuelve su tipo e ID.
-   * @param {string} url
-   * @returns {{ type: 'track'|'playlist', id: string } | null}
-   */
   parseUrl(url) {
     const track = url.match(/spotify\.com\/track\/([a-zA-Z0-9]+)/);
     if (track) return { type: 'track', id: track[1] };
@@ -62,11 +48,6 @@ class SpotifyHelper {
     return null;
   }
 
-  // ── Track formatting ──────────────────────────────────────────────────────
-
-  /**
-   * Convierte un objeto de track de la Spotify API al formato interno del bot.
-   */
   _formatTrack(t, requester = 'AutoPlay') {
     return {
       title: t.name,
@@ -74,24 +55,17 @@ class SpotifyHelper {
       duration: Math.floor((t.duration_ms || 0) / 1000),
       thumbnail: t.album?.images?.[0]?.url || null,
       spotifyId: t.id,
-      streamUrl: null, // se resuelve a YouTube justo antes de reproducir
+      streamUrl: null,
       requester,
       autoQueued: false,
     };
   }
 
-  // ── Public methods ────────────────────────────────────────────────────────
-
-  /** Obtiene un track individual por ID. */
   async getTrack(id, requester) {
     const data = await this._get(`/tracks/${id}`);
     return this._formatTrack(data, requester);
   }
 
-  /**
-   * Obtiene todos los tracks de una playlist (maneja paginación de hasta 100 por página).
-   * @returns {Track[]}
-   */
   async getPlaylistTracks(id, requester) {
     const tracks = [];
     let path =
@@ -101,22 +75,16 @@ class SpotifyHelper {
     while (path) {
       const data = await this._get(path);
       for (const item of data.items) {
-        // Saltar tracks locales o eliminados
         if (item.track?.id) {
           tracks.push(this._formatTrack(item.track, requester));
         }
       }
-      // La URL next de Spotify es absoluta; extraemos solo el path
       path = data.next ? data.next.replace('https://api.spotify.com/v1', '') : null;
     }
 
     return tracks;
   }
 
-  /**
-   * Busca un track en Spotify por texto y devuelve su ID (para tracks de YouTube).
-   * @returns {string|null}
-   */
   async searchTrackId(query) {
     try {
       const data = await this._get(
@@ -129,27 +97,26 @@ class SpotifyHelper {
   }
 
   /**
-   * Obtiene 5 recomendaciones basadas en el último track reproducido.
-   * Si el track no tiene spotifyId, lo busca primero.
-   * @param {Track} track
-   * @returns {Track[]}
+   * Busca canciones del mismo género usando el artista del último track.
+   * Reemplaza /recommendations que Spotify eliminó en noviembre 2024.
    */
   async getRecommendations(track) {
-    let spotifyId = track.spotifyId;
-
-    if (!spotifyId) {
-      spotifyId = await this.searchTrackId(`${track.title} ${track.artist || ''}`);
-    }
-    if (!spotifyId) return [];
-
     try {
+      // Buscar más canciones del mismo artista
+      const artist = track.artist?.split(',')[0]?.trim() || track.title;
       const data = await this._get(
-        `/recommendations?seed_tracks=${spotifyId}&limit=5`
+        `/search?q=${encodeURIComponent(artist)}&type=track&limit=10`
       );
-      return (data.tracks || []).map(t => ({
-        ...this._formatTrack(t, 'AutoPlay 🎵'),
-        autoQueued: true,
-      }));
+
+      const tracks = (data.tracks?.items || [])
+        .filter(t => t.id !== track.spotifyId) // excluir la canción actual
+        .slice(0, 5)
+        .map(t => ({
+          ...this._formatTrack(t, 'AutoPlay 🎵'),
+          autoQueued: true,
+        }));
+
+      return tracks;
     } catch (err) {
       console.error('[Spotify] Recommendations error:', err.message);
       return [];
