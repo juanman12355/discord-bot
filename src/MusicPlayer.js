@@ -103,8 +103,7 @@ class MusicPlayer {
         '-o', '-',
         '--quiet',
         '--no-playlist',
-        '--cookies', '/home/ubuntu/discord-bot/cookies.txt',
-        '--js-runtimes', 'deno',
+        '--cookies-from-browser', 'chromium:/home/ubuntu/snap/chromium/common/chromium',
         track.streamUrl,
       ]);
       this._ytdlpProcess = ytdlp;
