@@ -68,9 +68,7 @@ class SpotifyHelper {
 
   async getPlaylistTracks(id, requester) {
     const tracks = [];
-    let path =
-      `/playlists/${id}/tracks?limit=100` +
-      `&fields=next,items(track(id,name,artists,duration_ms,album(images)))`;
+    let path = `/playlists/${id}/tracks?limit=100`;
 
     while (path) {
       const data = await this._get(path);

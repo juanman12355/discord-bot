@@ -26,6 +26,7 @@ class MusicPlayer {
     this.loop = 'none';
 
     this._currentResource = null;
+    this._ytdlpProcess = null;
     this.autoPaused = false;
 
     this.audioPlayer = createAudioPlayer({
@@ -106,6 +107,7 @@ class MusicPlayer {
         '--js-runtimes', 'deno',
         track.streamUrl,
       ]);
+      this._ytdlpProcess = ytdlp;
 
       ytdlp.stderr.on('data', data => {
         console.error(`[yt-dlp:${this.guildId}]`, data.toString().trim());
@@ -171,6 +173,7 @@ class MusicPlayer {
   }
 
   skip() {
+    this._ytdlpProcess?.kill();
     this.audioPlayer.stop();
   }
 
@@ -199,6 +202,7 @@ class MusicPlayer {
   }
 
   stop() {
+    this._ytdlpProcess?.kill();
     this.queue = [];
     this.currentTrack = null;
     this.audioPlayer.stop();
